@@ -4,7 +4,7 @@ version: 1.0.0
 description: One-click commit (and push) across all recently-active git repos. Discovers repos from coding agents' own records of recent projects (Claude Code, Codex, Cursor — no directory scanning), classifies each by push-readiness, then commits with auto-generated messages and pushes where safe. Use when the user wants to "commit everything", "提交所有仓库", "一键提交", sync/save work across multiple projects, or commit-and-push their active repos at end of day.
 metadata:
   requires:
-    bins: ["git", "python3"]
+    bins: ["git", "bun"]
 ---
 
 # commit-all
@@ -15,15 +15,16 @@ by scanning the filesystem, so coverage tracks where you actually work.
 
 ## How discovery works
 
-`discover.py` builds the repo list from every supported coding agent, then resolves
-and classifies. It reads each agent's config directly, so it sees **all** agents'
-recent projects regardless of which agent is running the skill.
+`discover.ts` (run with [Bun](https://bun.sh)) builds the repo list from every
+supported coding agent, then resolves and classifies. It reads each agent's config
+directly, so it sees **all** agents' recent projects regardless of which agent is
+running the skill.
 
 1. **Collect** candidate paths (union, deduped) from each agent source:
    - Claude Code — `~/.claude.json` → `.projects` keys
    - Codex — `~/.codex/config.toml` `[projects."…"]` + `~/.codex/sessions/**/*.jsonl` cwd
    - Cursor — `…/globalStorage/state.vscdb` → `history.recentlyOpenedPathsList`
-   - Adding an agent is one collector function in `discover.py`'s `SOURCES` registry.
+   - Adding an agent is one collector function in `discover.ts`'s `SOURCES` registry.
 2. **Resolve** each path to its git toplevel (`git rev-parse --show-toplevel`) —
    non-repos, parent dirs, and duplicates fall out automatically.
 3. **Classify** each repo with `git status --porcelain=v2 --branch` + remote/upstream
@@ -33,17 +34,17 @@ recent projects regardless of which agent is running the skill.
    - `blocked` — behind the remote → **commit local changes, do NOT auto-push**
    - clean & synced repos are skipped silently
 
-Tradeoff to be aware of: a repo you've never opened in Claude Code or Codex won't be
+Tradeoff to be aware of: a repo you've never opened in a supported agent won't be
 discovered. That's intentional — it keeps the list to active work.
 
 ## Workflow
 
-1. **Discover.** Run the bundled script — it lives in the same directory as this
-   `SKILL.md`. Use that directory's absolute path:
+1. **Discover.** Run the bundled script with Bun — it lives in the same directory as
+   this `SKILL.md`. Use that directory's absolute path:
    ```bash
-   python3 "<this-skill-dir>/discover.py"
+   bun "<this-skill-dir>/discover.ts"
    ```
-   Parse the JSON. (Use `--pretty` if you just want to show the user a summary.)
+   Parse the JSON. (Add `--pretty` if you just want to show the user a summary.)
 
 2. **Report & confirm.** Show the user the actionable repos grouped by bucket
    (`ready` / `commit_only` / `blocked`), with branch and a short change summary for

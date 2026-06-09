@@ -70,7 +70,8 @@ npx skills list
 npx skills remove commit-all
 ```
 
-Requirements: `git` and `python3` (stdlib only — no pip installs).
+Requirements: `git` and [`bun`](https://bun.sh) (discovery is a single TypeScript
+file using only Bun built-ins — no `bun install` needed).
 
 ---
 
@@ -92,8 +93,8 @@ or just ask it to "commit all my repos" / "提交所有仓库". The skill will:
 You can also run discovery standalone to preview, without committing:
 
 ```bash
-python3 discover.py --pretty   # human-readable
-python3 discover.py            # JSON
+bun discover.ts --pretty   # human-readable
+bun discover.ts            # JSON
 ```
 
 ---
@@ -113,25 +114,26 @@ python3 discover.py            # JSON
 
 ## Extending discovery to another agent
 
-Discovery sources live in a registry in `discover.py`:
+Discovery sources live in a registry in `discover.ts`:
 
-```python
-SOURCES = {
-    "claude-code": src_claude_code,
-    "codex": src_codex,
-    "cursor": src_cursor,
-}
+```ts
+const SOURCES: Record<string, Source> = {
+  "claude-code": srcClaudeCode,
+  codex: srcCodex,
+  cursor: srcCursor,
+};
 ```
 
-Add a collector that returns a list of candidate paths (and **fails closed** —
+Add a collector that returns an array of candidate paths (and **fails closed** —
 returns `[]` if that agent isn't installed or anything goes wrong), then register it:
 
-```python
-def src_myagent() -> list[str]:
-    ...
-    return paths
+```ts
+function srcMyAgent(): string[] {
+  // ...
+  return paths;
+}
 
-SOURCES["myagent"] = src_myagent
+SOURCES["myagent"] = srcMyAgent;
 ```
 
 Everything downstream (resolve, classify, bucket) is agent-agnostic and needs no
@@ -144,5 +146,5 @@ changes.
 | File | Purpose |
 |------|---------|
 | `SKILL.md` | Skill definition + workflow the agent follows |
-| `discover.py` | Discovery, resolution, and classification (stdlib only) |
+| `discover.ts` | Discovery, resolution, and classification (Bun, zero deps) |
 | `README.md` | This file |
